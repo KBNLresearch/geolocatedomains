@@ -158,7 +158,7 @@ def main():
     outCSV = csv.writer(fOut, delimiter=separator, lineterminator='\n')
 
     # Header for output file as list
-    outHeader = ['domain', 'hasValidIP', 'countryIsoCode', 'cityName', 'latitude', 'longitude']
+    outHeader = ['domain', 'hasValidIP', 'countryIsoCode', 'cityName', 'latitude', 'longitude', 'accuracyRadius']
 
     # Write header to output file
     try:
@@ -182,6 +182,7 @@ def main():
             cityName = ''
             latitude = ''
             longitude = ''
+            accuracyRadius = ''
 
             # Query database for IP address
             try:
@@ -197,11 +198,12 @@ def main():
                     cityName = response.city.name
                     latitude = response.location.latitude
                     longitude = response.location.longitude
+                    accuracyRadius = response.location.accuracy_radius
                 except geoip2.errors.AddressNotFoundError:
                     pass
 
             # Add items to output row
-            outRow = [domain, hasValidIP, countryIsoCode, cityName, latitude, longitude]
+            outRow = [domain, hasValidIP, countryIsoCode, cityName, latitude, longitude, accuracyRadius]
 
             # Write row to output file
             try:
