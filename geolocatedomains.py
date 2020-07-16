@@ -20,8 +20,11 @@ import csv
 import argparse
 import subprocess as sub
 from shutil import which
+import multiprocessing as mp
+import time
 import geoip2.database
 import maxminddb
+
 
 def parseCommandLine(parser):
     """Command line parser"""
@@ -95,6 +98,45 @@ def getIP(domain):
                 ip = line.split("has address ")[1].strip()
                 break
     return ip
+
+
+def processDomain(domain, reader):
+    # Get IP address
+    ip = getIP(domain)
+
+    # Init flag for validity of IP address
+    hasValidIP = True
+
+    # Defaults for output fields
+    countryIsoCode = ''
+    cityName = ''
+    latitude = ''
+    longitude = ''
+    accuracyRadius = ''
+
+    # Query database for IP address
+    try:
+        response = reader.city(ip)
+    except ValueError:
+        hasValidIP = False
+    except geoip2.errors.AddressNotFoundError:
+        hasValidIP = False
+
+    if hasValidIP:
+        try:
+            countryIsoCode = response.country.iso_code
+            cityName = response.city.name
+            latitude = response.location.latitude
+            longitude = response.location.longitude
+            accuracyRadius = response.location.accuracy_radius
+        except geoip2.errors.AddressNotFoundError:
+            pass
+
+    # Add items to output row
+    outRow = [domain, hasValidIP, countryIsoCode, cityName, latitude, longitude, accuracyRadius]
+
+    return outRow
+
 
 def main():
     """Main function"""
@@ -170,40 +212,7 @@ def main():
     for inRow in inRows:
         if inRow != []:
             domain = inRow[0]
-
-            # Get IP address
-            ip = getIP(domain)
-
-            # Init flag for validity of IP address
-            hasValidIP = True
-
-            # Defaults for output fields
-            countryIsoCode = ''
-            cityName = ''
-            latitude = ''
-            longitude = ''
-            accuracyRadius = ''
-
-            # Query database for IP address
-            try:
-                response = reader.city(ip)
-            except ValueError:
-                hasValidIP = False
-            except geoip2.errors.AddressNotFoundError:
-                hasValidIP = False
-
-            if hasValidIP:
-                try:
-                    countryIsoCode = response.country.iso_code
-                    cityName = response.city.name
-                    latitude = response.location.latitude
-                    longitude = response.location.longitude
-                    accuracyRadius = response.location.accuracy_radius
-                except geoip2.errors.AddressNotFoundError:
-                    pass
-
-            # Add items to output row
-            outRow = [domain, hasValidIP, countryIsoCode, cityName, latitude, longitude, accuracyRadius]
+            outRow = processDomain(domain, reader)
 
             # Write row to output file
             try:
