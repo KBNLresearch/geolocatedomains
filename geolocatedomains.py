@@ -14,14 +14,12 @@ Requirements:
    available from https://dev.maxmind.com/geoip/geoip2/geolite2/
 """
 
-import os
 import sys
 import csv
 import argparse
 import subprocess as sub
 from shutil import which
 import multiprocessing as mp
-import time
 import geoip2.database
 import maxminddb
 
@@ -32,10 +30,10 @@ def parseCommandLine(parser):
                         action='store',
                         type=str,
                         help='input file')
-    parser.add_argument('fileOut',
+    parser.add_argument('prefOut',
                         action='store',
                         type=str,
-                        help='output file')
+                        help='output prefix')
     parser.add_argument('database',
                         action='store',
                         type=str,
@@ -75,7 +73,7 @@ def launchSubProcess(args):
     return exitStatus, outputAsString, errorsAsString
 
 
-def getIP(domain):
+def getIP(domain, q):
     """Returns IP address from domain"""
 
     # Python in-built methods don't seem to work, so use external
@@ -96,15 +94,12 @@ def getIP(domain):
             if "has address " in line:
                 ip = line.split("has address ")[1].strip()
                 break
-    return ip
+    q.put(domain + "," + ip)
+    return (domain + "," + ip)
 
 
-#def processDomain(domain, reader, q):
-def processDomain(domain, q):
-    """Process one domain"""
-
-    # Get IP address
-    ip = getIP(domain)
+def processIP(reader, domain, ip):
+    """Process one IP address"""
 
     # Init flag for validity of IP address
     hasValidIP = True
@@ -116,7 +111,6 @@ def processDomain(domain, q):
     longitude = ''
     accuracyRadius = ''
 
-    """  
     # Query database for IP address
     try:
         response = reader.city(ip)
@@ -134,26 +128,21 @@ def processDomain(domain, q):
             accuracyRadius = response.location.accuracy_radius
         except geoip2.errors.AddressNotFoundError:
             pass
-    """
 
     # Add items to output row
-    #outRow = [domain, hasValidIP, countryIsoCode, cityName, latitude, longitude, accuracyRadius]
-    # TODO: make this work with CSV Writer
-    outRow = domain + "," + str(hasValidIP) + "," + ip
-    q.put(outRow)
+    outRow = [domain, hasValidIP, countryIsoCode, cityName, latitude, longitude, accuracyRadius]
     return outRow
 
-
-def listener(fileOut, q):
+def listener(fileIp, q):
     """Listens for messages on the q, writes to file"""
 
-    with open(fileOut, "w", encoding="utf-8") as fOut:
+    with open(fileIp, "w", encoding="utf-8") as fIp:
         while 1:
             m = q.get()
             if m == "kill":
                 break
-            fOut.write(str(m) + "\n")
-            fOut.flush()
+            fIp.write(str(m) + "\n")
+            fIp.flush()
 
 def main():
     """Main function"""
@@ -167,19 +156,13 @@ def main():
     parser = argparse.ArgumentParser(description='Get geolocation information for list of domains')
     args = parseCommandLine(parser)
     fileIn = args.fileIn
-    fileOut = args.fileOut
+    prefOut = args.prefOut
     database = args.database
     separator = ","
 
-    # Create geolocation database reader object
-    try:
-        reader = geoip2.database.Reader(database)
-    except FileNotFoundError:
-        msg = "Cannot find database file"
-        errorExit(msg)
-    except maxminddb.errors.InvalidDatabaseError:
-        msg = "Error reading database"
-        errorExit(msg)
+    # Output file names
+    fileIp = prefOut + "-ip.csv"
+    fileLoc = prefOut + "-loc.csv"
 
     # Read input file
     try:
@@ -200,63 +183,20 @@ def main():
         msg = 'Could not parse ' + fileIn
         errorExit(msg)
 
-    # Delete output file if it already exists
-    try:
-        os.remove(fileOut)
-    except IOError:
-        pass
-
-
-    """
-    # Open output file in append mode
-    try:
-        fOut = open(fileOut, "a", encoding="utf-8")
-    except IOError:
-        msg = 'could not read file ' + fileOut
-        errorExit(msg)
-
-    # Create CSV writer object
-    outCSV = csv.writer(fOut, delimiter=separator, lineterminator='\n')
-
-    # Header for output file as list
-    outHeader = ['domain', 'hasValidIP', 'countryIsoCode', 'cityName', 'latitude', 'longitude', 'accuracyRadius']
-
-    # Write header to output file
-    try:
-        outCSV.writerow(outHeader)
-    except IOError:
-        msg = 'could not write file ' + fileOut
-        errorExit(msg)
-    """
-
     manager = mp.Manager()
     q = manager.Queue()    
     pool = mp.Pool(mp.cpu_count() + 2)
 
     #put listener to work first
-    watcher = pool.apply_async(listener, (fileOut, q,))
+    watcher = pool.apply_async(listener, (fileIp, q,))
 
     jobs = []
 
     for inRow in inRows:
         if inRow != []:
             domain = inRow[0]
-            #outRow = processDomain(domain, reader, q)
-            #job = pool.apply_async(processDomain, (domain, reader, q))
-            job = pool.apply_async(processDomain, (domain, q))
+            job = pool.apply_async(getIP, (domain, q))
             jobs.append(job)
-            
-
-            """
-            # Write row to output file
-            try:
-                outCSV.writerow(outRow)
-            except IOError:
-                msg = 'could not write file ' + fileOut
-                errorExit(msg)
-
-    fOut.close()
-    """
 
     # Collect results from workers through pool result queue
     for job in jobs:
@@ -267,6 +207,52 @@ def main():
     pool.close()
     pool.join()
 
+    # Create geolocation database reader object
+    try:
+        reader = geoip2.database.Reader(database)
+    except FileNotFoundError:
+        msg = "Cannot find database file"
+        errorExit(msg)
+    except maxminddb.errors.InvalidDatabaseError:
+        msg = "Error reading database"
+        errorExit(msg)
+
+   # Open location file in append mode
+    try:
+        fLoc = open(fileLoc, "a", encoding="utf-8")
+    except IOError:
+        msg = 'could not open file ' + fileLoc
+        errorExit(msg)
+
+    # Create CSV writer object
+    locCSV = csv.writer(fLoc, delimiter=separator, lineterminator='\n')
+
+    # Header for output file as list
+    locHeader = ['domain', 'hasValidIP', 'countryIsoCode', 'cityName', 'latitude', 'longitude', 'accuracyRadius']
+
+    # Write header to output file
+    try:
+        locCSV.writerow(locHeader)
+    except IOError:
+        msg = 'could not write file ' + fileLoc
+        errorExit(msg)
+
+    # Open IP address file and iterate over entries
+    with open(fileIp, "r", encoding="utf-8") as fIp:
+        ip_csv = csv.reader(fIp, delimiter=separator)
+        for record in ip_csv:
+            domain = record[0]
+            ip = record[1]
+            # Lookup this record
+            locRow = processIP(reader, domain, ip)
+            # Write row to location file
+            try:
+                locCSV.writerow(locRow)
+            except IOError:
+                msg = 'could not write file ' + fileLoc
+                errorExit(msg)
+    
+    fLoc.close()
 
 if __name__ == "__main__":
     main()
