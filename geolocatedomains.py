@@ -25,7 +25,6 @@ import time
 import geoip2.database
 import maxminddb
 
-
 def parseCommandLine(parser):
     """Command line parser"""
 
@@ -100,7 +99,10 @@ def getIP(domain):
     return ip
 
 
-def processDomain(domain, reader):
+#def processDomain(domain, reader, q):
+def processDomain(domain, q):
+    """Process one domain"""
+
     # Get IP address
     ip = getIP(domain)
 
@@ -114,6 +116,7 @@ def processDomain(domain, reader):
     longitude = ''
     accuracyRadius = ''
 
+    """  
     # Query database for IP address
     try:
         response = reader.city(ip)
@@ -131,12 +134,31 @@ def processDomain(domain, reader):
             accuracyRadius = response.location.accuracy_radius
         except geoip2.errors.AddressNotFoundError:
             pass
+    """
 
     # Add items to output row
-    outRow = [domain, hasValidIP, countryIsoCode, cityName, latitude, longitude, accuracyRadius]
-
+    #outRow = [domain, hasValidIP, countryIsoCode, cityName, latitude, longitude, accuracyRadius]
+    # TODO: make this work with CSV Writer
+    outRow = domain + "," + str(hasValidIP) + "," + ip
+    q.put(outRow)
     return outRow
 
+
+def listener(fileOut, q):
+    """Listens for messages on the q, writes to file"""
+
+    with open(fileOut, "w", encoding="utf-8") as fOut:
+        while 1:
+            m = q.get()
+            if m == "kill":
+                # Do we need this? 
+                #fOut.write("killed")
+                q.put("kill-listener")
+                time.sleep(2)
+                exit()
+                #thread.interrupt_main()
+            fOut.write(str(m) + "\n")
+            fOut.flush()
 
 def main():
     """Main function"""
@@ -189,13 +211,15 @@ def main():
     except IOError:
         pass
 
+
+    """
     # Open output file in append mode
     try:
         fOut = open(fileOut, "a", encoding="utf-8")
     except IOError:
         msg = 'could not read file ' + fileOut
         errorExit(msg)
-    
+
     # Create CSV writer object
     outCSV = csv.writer(fOut, delimiter=separator, lineterminator='\n')
 
@@ -208,12 +232,27 @@ def main():
     except IOError:
         msg = 'could not write file ' + fileOut
         errorExit(msg)
+    """
+
+    manager = mp.Manager()
+    q = manager.Queue()    
+    pool = mp.Pool(mp.cpu_count() + 2)
+
+    #put listener to work first
+    watcher = pool.apply_async(listener, (fileOut, q,))
+
+    jobs = []
 
     for inRow in inRows:
         if inRow != []:
             domain = inRow[0]
-            outRow = processDomain(domain, reader)
+            #outRow = processDomain(domain, reader, q)
+            #job = pool.apply_async(processDomain, (domain, reader, q))
+            job = pool.apply_async(processDomain, (domain, q))
+            jobs.append(job)
+            
 
+            """
             # Write row to output file
             try:
                 outCSV.writerow(outRow)
@@ -222,6 +261,18 @@ def main():
                 errorExit(msg)
 
     fOut.close()
+    """
+
+    # Collect results from workers through pool result queue
+    for job in jobs:
+        job.get()
+
+    # Kill listener
+    q.put("kill")
+
+    pool.close()
+    pool.join()
+    q.close()
 
 
 if __name__ == "__main__":
