@@ -151,12 +151,7 @@ def listener(fileOut, q):
         while 1:
             m = q.get()
             if m == "kill":
-                # Do we need this? 
-                #fOut.write("killed")
-                q.put("kill-listener")
-                time.sleep(2)
-                exit()
-                #thread.interrupt_main()
+                break
             fOut.write(str(m) + "\n")
             fOut.flush()
 
@@ -269,10 +264,8 @@ def main():
 
     # Kill listener
     q.put("kill")
-
     pool.close()
     pool.join()
-    q.close()
 
 
 if __name__ == "__main__":
