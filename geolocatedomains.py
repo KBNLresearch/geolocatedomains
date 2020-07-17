@@ -234,7 +234,7 @@ def main():
 
     manager = mp.Manager()
     q = manager.Queue()    
-    pool = mp.Pool(mp.cpu_count() + 2)
+    pool = mp.Pool(mp.cpu_count() - 1)
 
     # Put listener to work first
     watcher = pool.apply_async(listener, (fileIp, q,))
