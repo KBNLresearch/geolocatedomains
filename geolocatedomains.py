@@ -17,6 +17,7 @@ Requirements:
 import os
 import sys
 import csv
+import time
 import argparse
 import subprocess as sub
 from shutil import which
@@ -165,6 +166,8 @@ def listener(fileIp, q):
 def main():
     """Main function"""
 
+    start_time = time.time()
+
     # Check if host tool is installed
     if which('host') is None:
         msg = "'host' tool is not installed"
@@ -304,6 +307,10 @@ def main():
                 errorExit(msg)
     
     fLoc.close()
+
+    end_time = time.time()
+    print("--- Total run time %s seconds ---" % (end_time - start_time))
+
 
 if __name__ == "__main__":
     main()
