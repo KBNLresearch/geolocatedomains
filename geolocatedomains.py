@@ -205,6 +205,10 @@ def main():
 
     # If IP file already exists, read it, and
     # store domains to a list
+
+    # List with previously processed domains
+    domainsDone = []
+
     if os.path.isfile(fileIp):
         try:
             fIp = open(fileIp, "r", encoding="utf-8")
@@ -224,8 +228,7 @@ def main():
             msg = 'Could not parse ' + fileIp
             errorExit(msg)
         
-        # Create and fill list
-        domainsDone = []
+        # Fill list
         for ipRow in ipRows:
             domainsDone.append(ipRow[0])
 
