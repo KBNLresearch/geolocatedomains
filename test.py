@@ -8,7 +8,7 @@ import multiprocessing as mp
 def doSomething(textIn, q):
     """Do some silly text processing"""
 
-    time.sleep(0.01)
+    #time.sleep(0.01)
     textOut = textIn + " is rubbish"
     q.put(textOut)
     return textOut
@@ -20,14 +20,15 @@ def listener(q):
         message = q.get()
         if message == "kill":
             break
-        print(message)
+        #print(message)
+        pass
  
 def main():
     """Main function"""
 
     manager = mp.Manager()
     q = manager.Queue()
-    pool = mp.Pool(processes=2)
+    pool = mp.Pool(processes=8)
 
     # Put listener to work first
     pool.apply_async(listener, (q,))
@@ -45,12 +46,15 @@ def main():
         count += 1
         job = pool.apply_async(doSomething, (inRow, q))
         jobs.append(job)
-        print(len(jobs))
+        #print(len(jobs))
 
-        if count%100 == 0:
-            if len(pool._cache) > 100:
+        if count%1000 == 0:
+            print("Count: " + str(count))
+            print("Cache size (before): " + str(len(pool._cache)))
+            if len(pool._cache) > 10000:
                 print("Waiting for cache to clear...")
                 job.wait() # Where last is assigned the latest ApplyResult
+                print("Cache size (after): " + str(len(pool._cache)))
                 
     # Collect results from workers through pool result queue
     for job in jobs:
