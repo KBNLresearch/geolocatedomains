@@ -136,16 +136,30 @@ def processIP(reader, domain, ip):
     outRow = [domain, hasValidIP, countryIsoCode, cityName, latitude, longitude, accuracyRadius]
     return outRow
 
+
 def listener(fileIp, q):
     """Listens for messages on the q, writes to file"""
 
-    with open(fileIp, "w", encoding="utf-8") as fIp:
+    # Open IP file in append mode
+    try:
+        fIp = open(fileIp, "a", encoding="utf-8")
+    except IOError:
+        msg = 'could not open file ' + fileIp
+        errorExit(msg)
+
+    # Create CSV writer object
+    ipCSV = csv.writer(fIp, delimiter=",", lineterminator='\n')
+
+    with open(fileIp, "a", encoding="utf-8") as fIp:
         while 1:
             outRow = q.get()
             if outRow[0] == "kill":
                 break
-            #fIp.write(str(m) + "\n")
-            fIp.write(outRow[0] + "," + outRow[1] + "\n")
+            try:
+                ipCSV.writerow(outRow)
+            except IOError:
+                msg = 'could not write file ' + fileIp
+                errorExit(msg)
             fIp.flush()
 
 def main():
@@ -162,7 +176,6 @@ def main():
     fileIn = args.fileIn
     prefOut = args.prefOut
     database = args.database
-    separator = ","
 
     # Output file names
     fileIp = prefOut + "-ip.csv"
@@ -235,7 +248,7 @@ def main():
         errorExit(msg)
 
     # Create CSV writer object
-    locCSV = csv.writer(fLoc, delimiter=separator, lineterminator='\n')
+    locCSV = csv.writer(fLoc, delimiter=",", lineterminator='\n')
 
     # Header for output file as list
     locHeader = ['domain', 'hasValidIP', 'countryIsoCode', 'cityName', 'latitude', 'longitude', 'accuracyRadius']
@@ -249,7 +262,7 @@ def main():
 
     # Open IP address file and iterate over entries
     with open(fileIp, "r", encoding="utf-8") as fIp:
-        ip_csv = csv.reader(fIp, delimiter=separator)
+        ip_csv = csv.reader(fIp, delimiter=",")
         for record in ip_csv:
             domain = record[0]
             ip = record[1]
