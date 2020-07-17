@@ -240,22 +240,18 @@ def main():
     processes = 2
     #processes = mp.cpu_count() - 2
     # Max number of tasks perr child process
-    maxtasksperchild = 1000
 
     manager = mp.Manager()
     q = manager.Queue()
     #pool = mp.Pool(processes=processes, maxtasksperchild=maxtasksperchild)
-    pool = mp.Pool(processes=2, maxtasksperchild=1)
+    pool = mp.Pool(processes=4)
 
     # Put listener to work first
     pool.apply_async(listener, (fileIp, q,))
 
     jobs = []
     
-    ## TEST
     rowIndex = 0
-    traceInterval = 2
-    ## TEST
 
     for inRow in inRows:
         if inRow != []:
@@ -266,6 +262,13 @@ def main():
                 job = pool.apply_async(getIP, (domain, q))
                 jobs.append(job)
                 print(len(jobs))
+            
+            if rowIndex%100 == 0:
+                # This is to prevent all RAM being consumed by filling of pool
+                # Source: https://stackoverflow.com/a/21121583/1209004
+                if len(pool._cache) > 100:
+                    print("Waiting for cache to clear...")
+                    job.wait()
                 
     # Collect results from workers through pool result queue
     for job in jobs:
