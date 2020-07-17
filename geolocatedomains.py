@@ -190,7 +190,7 @@ def main():
 
     # Parse input file as comma-delimited data
     try:
-        inCSV = csv.reader(fIn, delimiter=',')
+        inCSV = csv.reader(fIn, delimiter=',', lineterminator='\n')
         # No header so commented this out
         #inHeader = next(inCSV)
         inRows = [row for row in inCSV]
@@ -199,6 +199,32 @@ def main():
         fIn.close()
         msg = 'Could not parse ' + fileIn
         errorExit(msg)
+
+    # If IP file already exists, read it, and
+    # store domains to a list
+    if os.path.isfile(fileIp):
+        try:
+            fIp = open(fileIp, "r", encoding="utf-8")
+        except IOError:
+            msg = 'could not read file ' + fileIp
+            errorExit(msg)
+
+        # Parse input file as comma-delimited data
+        try:
+            ipCSV = csv.reader(fIp, delimiter=',',  lineterminator='\n')
+            # No header so commented this out
+            #inHeader = next(inCSV)
+            ipRows = [row for row in ipCSV]
+            fIp.close()
+        except csv.Error:
+            fIp.close()
+            msg = 'Could not parse ' + fileIp
+            errorExit(msg)
+        
+        # Create and fill list
+        domainsDone = []
+        for ipRow in ipRows:
+            domainsDone.append(ipRow[0])
 
     manager = mp.Manager()
     q = manager.Queue()    
@@ -212,8 +238,10 @@ def main():
     for inRow in inRows:
         if inRow != []:
             domain = inRow[0]
-            job = pool.apply_async(getIP, (domain, q))
-            jobs.append(job)
+            # Only process domains that were not processed already in a previous run
+            if not domain in domainsDone:
+                job = pool.apply_async(getIP, (domain, q))
+                jobs.append(job)
 
     # Collect results from workers through pool result queue
     for job in jobs:
