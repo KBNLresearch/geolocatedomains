@@ -14,6 +14,7 @@ Requirements:
    available from https://dev.maxmind.com/geoip/geoip2/geolite2/
 """
 
+import os
 import sys
 import csv
 import argparse
@@ -94,8 +95,10 @@ def getIP(domain, q):
             if "has address " in line:
                 ip = line.split("has address ")[1].strip()
                 break
-    q.put(domain + "," + ip)
-    return (domain + "," + ip)
+
+    outRow = [domain, ip]
+    q.put(outRow)
+    return outRow
 
 
 def processIP(reader, domain, ip):
@@ -138,10 +141,11 @@ def listener(fileIp, q):
 
     with open(fileIp, "w", encoding="utf-8") as fIp:
         while 1:
-            m = q.get()
-            if m == "kill":
+            outRow = q.get()
+            if outRow[0] == "kill":
                 break
-            fIp.write(str(m) + "\n")
+            #fIp.write(str(m) + "\n")
+            fIp.write(outRow[0] + "," + outRow[1] + "\n")
             fIp.flush()
 
 def main():
@@ -187,7 +191,7 @@ def main():
     q = manager.Queue()    
     pool = mp.Pool(mp.cpu_count() + 2)
 
-    #put listener to work first
+    # Put listener to work first
     watcher = pool.apply_async(listener, (fileIp, q,))
 
     jobs = []
@@ -203,7 +207,7 @@ def main():
         job.get()
 
     # Kill listener
-    q.put("kill")
+    q.put(["kill", "kill"])
     pool.close()
     pool.join()
 
@@ -217,7 +221,13 @@ def main():
         msg = "Error reading database"
         errorExit(msg)
 
-   # Open location file in append mode
+    # Delete location file if it exists already
+    try:
+        os.remove(fileLoc)
+    except IOError:
+        pass
+
+    # Open location file in append mode
     try:
         fLoc = open(fileLoc, "a", encoding="utf-8")
     except IOError:
