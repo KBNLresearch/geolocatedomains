@@ -19,6 +19,8 @@ import sys
 import csv
 import time
 import argparse
+#import tracemalloc
+#import gc
 import subprocess as sub
 from shutil import which
 import multiprocessing as mp
@@ -155,6 +157,7 @@ def listener(fileIp, q):
         while 1:
             outRow = q.get()
             if outRow[0] == "kill":
+                fIp.close()
                 break
             try:
                 ipCSV.writerow(outRow)
@@ -167,6 +170,7 @@ def main():
     """Main function"""
 
     start_time = time.time()
+    #tracemalloc.start()
 
     # Check if host tool is installed
     if which('host') is None:
@@ -218,7 +222,7 @@ def main():
 
         # Parse input file as comma-delimited data
         try:
-            ipCSV = csv.reader(fIp, delimiter=',',  lineterminator='\n')
+            ipCSV = csv.reader(fIp, delimiter=',', lineterminator='\n')
             # No header so commented this out
             #inHeader = next(inCSV)
             ipRows = [row for row in ipCSV]
@@ -232,23 +236,37 @@ def main():
         for ipRow in ipRows:
             domainsDone.append(ipRow[0])
 
+    # Number of parallel processes
+    processes = 2
+    #processes = mp.cpu_count() - 2
+    # Max number of tasks perr child process
+    maxtasksperchild = 1000
+
     manager = mp.Manager()
-    q = manager.Queue()    
-    pool = mp.Pool(mp.cpu_count() - 1)
+    q = manager.Queue()
+    #pool = mp.Pool(processes=processes, maxtasksperchild=maxtasksperchild)
+    pool = mp.Pool(processes=2, maxtasksperchild=1)
 
     # Put listener to work first
-    watcher = pool.apply_async(listener, (fileIp, q,))
+    pool.apply_async(listener, (fileIp, q,))
 
     jobs = []
+    
+    ## TEST
+    rowIndex = 0
+    traceInterval = 2
+    ## TEST
 
     for inRow in inRows:
         if inRow != []:
             domain = inRow[0]
+            rowIndex += 1
             # Only process domains that were not processed already in a previous run
             if not domain in domainsDone:
                 job = pool.apply_async(getIP, (domain, q))
                 jobs.append(job)
-
+                print(len(jobs))
+                
     # Collect results from workers through pool result queue
     for job in jobs:
         job.get()
@@ -308,12 +326,11 @@ def main():
             except IOError:
                 msg = 'could not write file ' + fileLoc
                 errorExit(msg)
-    
+
     fLoc.close()
 
     end_time = time.time()
     print("--- Total run time %s seconds ---" % (end_time - start_time))
-
 
 if __name__ == "__main__":
     main()
