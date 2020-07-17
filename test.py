@@ -1,13 +1,14 @@
 #! /usr/bin/env python3
 
 
+import sys
 import time
 import multiprocessing as mp
 
 def doSomething(textIn, q):
     """Do some silly text processing"""
 
-    time.sleep(1)
+    time.sleep(0.01)
     textOut = textIn + " is rubbish"
     q.put(textOut)
     return textOut
@@ -32,15 +33,24 @@ def main():
     pool.apply_async(listener, (q,))
   
     # Create list with 5 million text elements
-    inRows = ["This script"]*5000000
+    inRows = ["This script"]*6000000
 
     # Jobs list
     jobs = []
+
+    count = 0
     
     # Iterate over list and add jobs to the pool
     for inRow in inRows:
+        count += 1
         job = pool.apply_async(doSomething, (inRow, q))
         jobs.append(job)
+        print(len(jobs))
+
+        if count%100 == 0:
+            if len(pool._cache) > 100:
+                print("Waiting for cache to clear...")
+                job.wait() # Where last is assigned the latest ApplyResult
                 
     # Collect results from workers through pool result queue
     for job in jobs:
