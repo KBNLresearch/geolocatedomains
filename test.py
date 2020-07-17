@@ -1,69 +1,45 @@
 #! /usr/bin/env python3
 
 
-import os
-import sys
-import csv
 import time
-from shutil import which
 import multiprocessing as mp
 
-def getIP(domain, q):
-    """Returns IP address from domain"""
+def doSomething(textIn, q):
+    """Do some silly text processing"""
 
-    # Python in-built methods don't seem to work, so use external
-    # host tool
-    args = ['host']
-    args.append(domain)
+    time.sleep(1)
+    textOut = textIn + " is rubbish"
+    q.put(textOut)
+    return textOut
 
-    time.sleep(2)
+def listener(q):
+    """Listens for messages on the q, print to screen"""
 
-    outRow = [domain, "1234"]
-    q.put(outRow)
-    return outRow
-
-def listener(fileIp, q):
-    """Listens for messages on the q, writes to file"""
-
-    # Open IP file in append mode
-    try:
-        fIp = open(fileIp, "a", encoding="utf-8")
-    except IOError:
-        msg = 'could not open file ' + fileIp
-
-    # Create CSV writer object
-    ipCSV = csv.writer(fIp, delimiter=",", lineterminator='\n')
-
-    with open(fileIp, "a", encoding="utf-8") as fIp:
-        while 1:
-            outRow = q.get()
-            if outRow[0] == "kill":
-                fIp.close()
-                break
-            try:
-                ipCSV.writerow(outRow)
-            except IOError:
-                msg = 'could not write file ' + fileIp
-            fIp.flush()
-
+    while 1:
+        message = q.get()
+        if message == "kill":
+            break
+        print(message)
+ 
 def main():
     """Main function"""
 
     manager = mp.Manager()
     q = manager.Queue()
-    #pool = mp.Pool(processes=processes, maxtasksperchild=maxtasksperchild)
     pool = mp.Pool(processes=2)
 
     # Put listener to work first
-    pool.apply_async(listener, ("bullsh.csv", q,))
+    pool.apply_async(listener, (q,))
+  
+    # Create list with 5 million text elements
+    inRows = ["This script"]*5000000
 
+    # Jobs list
     jobs = []
-
-    inRows = [["bitsgalore.org"]]*100
     
+    # Iterate over list and add jobs to the pool
     for inRow in inRows:
-        domain = inRow[0]
-        job = pool.apply_async(getIP, (domain, q))
+        job = pool.apply_async(doSomething, (inRow, q))
         jobs.append(job)
                 
     # Collect results from workers through pool result queue
@@ -71,7 +47,7 @@ def main():
         job.get()
 
     # Kill listener
-    q.put(["kill", "kill"])
+    q.put("kill")
     pool.close()
     pool.join()
 
