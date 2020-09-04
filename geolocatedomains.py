@@ -19,8 +19,6 @@ import sys
 import csv
 import time
 import argparse
-#import tracemalloc
-#import gc
 import subprocess as sub
 from shutil import which
 import multiprocessing as mp
@@ -170,7 +168,6 @@ def main():
     """Main function"""
 
     start_time = time.time()
-    #tracemalloc.start()
 
     # Check if host tool is installed
     if which('host') is None:
@@ -237,9 +234,8 @@ def main():
             domainsDone.append(ipRow[0])
 
     # Number of parallel processes
-    processes = 2
+    # processes = 2
     #processes = mp.cpu_count() - 2
-    # Max number of tasks perr child process
 
     manager = mp.Manager()
     q = manager.Queue()
@@ -252,6 +248,9 @@ def main():
     jobs = []
     
     rowIndex = 0
+
+    map(func, iterable[, chunksize])
+
 
     for inRow in inRows:
         if inRow != []:
