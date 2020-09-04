@@ -34,6 +34,6 @@ head -1 ~/kb/geolocation-nldomain/qgis/domains-nl00-join-prov.csv > domains-nl-j
 sudo apt-get install python3-pandas
 sudo python3 -m pip install markdown
 sudo python3 -m pip install tabulate
-
+sudo python3 -m pip install matplotlib
 ```
 
