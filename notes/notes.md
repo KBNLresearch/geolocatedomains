@@ -188,3 +188,7 @@ Compute:
 | Drenthe       |  14971           |                         0.43 |
 | Limburg       |  11154           |                         0.32 |
 | Zeeland       |   3325           |                         0.1  |
+
+## Caveats
+
+- Accuracy of geolocation. Value of *accuracyRadius* reported by GeoLite2 database often 50 -100 km (TODO: compute some stats on this).
