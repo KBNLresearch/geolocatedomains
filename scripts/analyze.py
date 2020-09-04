@@ -51,6 +51,9 @@ def main():
                                  'accuracyRadius': 'str',
                                  'PROV_NAAM': 'str'})
 
+    # Replace eny empty values with NaN so we can handle missing data
+    domains.replace('', np.nan, inplace=True)
+
     # Number of domain records
     noDomains = len(domains)
 
@@ -66,6 +69,12 @@ def main():
 
     # Countries (calculated from active domains only)
     countryVCounts = domainsActive['countryIsoCode'].value_counts().to_frame()
+
+    # Active domains with no country ID
+    domainsActiveNoCountry = domainsActive[domainsActive['countryIsoCode'].isnull()]
+    noDomainsActiveNoCountry = len(domainsActiveNoCountry)
+
+    mdString += '\nNumber of active domains with no country ID:' + str(noDomainsActiveNoCountry) + '\n'
 
     # Add column with relative frequencies
     countryRelFrequencies = []
@@ -95,6 +104,10 @@ def main():
 
     mdString += '\n\n## Provinces\n\n'
     mdString += dfToMarkdown(provinceVCounts, ['Province', 'Count', '% of all NL-hosted domains'])
+
+    # Export records for domains hosted in Friesland to separate CSV
+    domainsFryslan = domainsNL[domainsNL['PROV_NAAM'] == 'Fryslân']
+    domainsFryslan.to_csv(os.path.join(dirOut, 'domains-fryslan.csv'), encoding='utf-8')
 
     # Open output report (Markdown format) for writing
     try:
