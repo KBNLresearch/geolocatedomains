@@ -49,12 +49,15 @@ Compute:
 
 ## Analysis results
 
-Number of active domains: 4606514
-
-Number of inactive domains: 1256783
+- Number of active domains: 4606514
+- Number of inactive domains: 1256783
+- Number of active domains with no country ID:26634
 
 
 ### Countries
+
+![](./countries.png)
+
 
 | Country   |            Count |   % of all active domains |
 |:----------|-----------------:|--------------------------:|
@@ -162,6 +165,8 @@ Number of inactive domains: 1256783
 | PH        |      1           |                      0    |
 
 ### Provinces
+
+![](./provinces.png)
 
 | Province      |            Count |   % of all NL-hosted domains |
 |:--------------|-----------------:|-----------------------------:|
