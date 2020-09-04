@@ -28,4 +28,12 @@ Combine the 6 output CSV files using (head command writes header line of 1st fil
 head -1 ~/kb/geolocation-nldomain/qgis/domains-nl00-join-prov.csv > domains-nl-join-prov.csv; tail -n +2 -q ~/kb/geolocation-nldomain/qgis/domains-nl0?-join-prov.csv >> domains-nl-join-prov.csv
 ```
 
+### Install Python Pandas
+
+```
+sudo apt-get install python3-pandas
+sudo python3 -m pip install markdown
+sudo python3 -m pip install tabulate
+
+```
 
