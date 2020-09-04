@@ -14,6 +14,12 @@ split -l 1000000 -d 2019-05-21_all_domains_NL.txt domains-nl
 
 Process files with [this script](https://github.com/KBNLresearch/geolocatedomains/blob/master/scripts/geolocatedomains.py), running on virtual machine in SURFsara [HPC Cloud](https://doc.hpccloud.surfsara.nl/)
 
+Total run time:
+
+- Started Tue 1 Sep, 12:45 (approx.)
+- Completed Thu 3 Sep, 18:39
+- So total run time approximately 54 hours.
+
 ### Spatial join with province layer 
 
 Import resulting files in [QGIS](https://www.qgis.org/).
