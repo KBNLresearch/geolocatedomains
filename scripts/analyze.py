@@ -63,22 +63,50 @@ def main():
                                  'accuracyRadius': 'str',
                                  'PROV_NAAM': 'str'})
 
-    # Number of domains records
+    # Number of domain records
     noDomains = len(domains)
 
-    # Frequency of provinces
-    provinceVCounts = domains['PROV_NAAM'].value_counts().to_frame()
+    # Select active domains
+    domainsActive = domains[domains['hasValidIP'] == 'True']
+    domainsInactive = domains[domains['hasValidIP'] == 'False']
+    noDomainsActive = len(domainsActive)
+    noDomainsInactive = len(domainsInactive)
+
+    # Report number of active and inactive domains
+    mdString += '\nNumber of active domains: ' + str(noDomainsActive) +'\n'
+    mdString += '\nNumber of inactive domains: ' + str(noDomainsInactive) +'\n'
+
+    # Countries (calculated from active domains only)
+    countryVCounts = domainsActive['countryIsoCode'].value_counts().to_frame()
+
+    # Add column with relative frequencies
+    countryRelFrequencies = []
+    for i, row in countryVCounts.iterrows():
+        relFrequency = 100*row[0]/noDomainsActive
+        countryRelFrequencies.append(round(relFrequency, 2))
+
+    countryVCounts.insert(1, '%', countryRelFrequencies)
+
+    mdString += '\n\n## Countries\n\n'
+    mdString += dfToMarkdown(countryVCounts, ['Country', 'Count', '% of all active domains'])
+
+    # Select domains hosted in NL
+    domainsNL = domainsActive[domainsActive['countryIsoCode'] == 'NL']
+    noDomainsNL = len(domainsNL)
+
+    # Provinces
+    provinceVCounts = domainsNL['PROV_NAAM'].value_counts().to_frame()
 
     # Add column with relative frequencies
     provinceRelFrequencies = []
     for i, row in provinceVCounts.iterrows():
-        relFrequency = 100*row[0]/noDomains
+        relFrequency = 100*row[0]/noDomainsNL
         provinceRelFrequencies.append(round(relFrequency, 2))
 
     provinceVCounts.insert(1, '%', provinceRelFrequencies)
 
     mdString += '\n\n## Provinces\n\n'
-    mdString += dfToMarkdown(provinceVCounts,['Province', 'Count', '% of all domains'])
+    mdString += dfToMarkdown(provinceVCounts, ['Province', 'Count', '% of all NL-hosted domains'])
 
     # Open output report (Markdown format) for writing
     try:
