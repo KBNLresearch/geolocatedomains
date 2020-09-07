@@ -176,7 +176,7 @@ Compute:
 
 | Province      |            Count |   % of all NL-hosted domains |
 |:--------------|-----------------:|-----------------------------:|
-| Noord-Holland |      2.60368e+06 |                        75.33 |
+| Noord-Holland |      2.60368e+06 |                        75.34 |
 | Zuid-Holland  | 270357           |                         7.82 |
 | Gelderland    | 221120           |                         6.4  |
 | Noord-Brabant | 133056           |                         3.85 |

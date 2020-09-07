@@ -87,8 +87,10 @@ def main():
     mdString += '\n\n## Countries\n\n'
     mdString += dfToMarkdown(countryVCounts, ['Country', 'Count', '% of all active domains'])
 
-    # Select domains hosted in NL
-    domainsNL = domainsActive[domainsActive['countryIsoCode'] == 'NL']
+    # Select domains hosted in NL (based on province match, just in case
+    # of missing countryIsoCode for any records)
+    # domainsNL = domainsActive[domainsActive['countryIsoCode'] == 'NL']
+    domainsNL = domainsActive[domainsActive['PROV_NAAM'].notnull()]
     noDomainsNL = len(domainsNL)
 
     # Provinces
