@@ -67,6 +67,12 @@ def main():
     mdString += '\nNumber of active domains: ' + str(noDomainsActive) +'\n'
     mdString += '\nNumber of inactive domains: ' + str(noDomainsInactive) +'\n'
 
+    ## Distribution of accuracyRadius
+    accuracyActive = domainsActive["accuracyRadius"].value_counts().to_frame()
+
+    mdString += '\n\n## Accuray radius distribution, active domains\n\n'
+    mdString += dfToMarkdown(accuracyActive, ['accuracyRadius', 'Count'])
+
     # Countries (calculated from active domains only)
     countryVCounts = domainsActive['countryIsoCode'].value_counts().to_frame()
 
@@ -74,7 +80,7 @@ def main():
     domainsActiveNoCountry = domainsActive[domainsActive['countryIsoCode'].isnull()]
     noDomainsActiveNoCountry = len(domainsActiveNoCountry)
 
-    mdString += '\nNumber of active domains with no country ID:' + str(noDomainsActiveNoCountry) + '\n'
+    mdString += '\n\nNumber of active domains with no country ID:' + str(noDomainsActiveNoCountry) + '\n'
 
     # Add column with relative frequencies
     countryRelFrequencies = []
@@ -92,6 +98,12 @@ def main():
     # domainsNL = domainsActive[domainsActive['countryIsoCode'] == 'NL']
     domainsNL = domainsActive[domainsActive['PROV_NAAM'].notnull()]
     noDomainsNL = len(domainsNL)
+
+    ## Distribution of accuracyRadius
+    accuracyNL = domainsNL["accuracyRadius"].value_counts().to_frame()
+
+    mdString += '\n\n## Accuray radius distribution, NL domains\n\n'
+    mdString += dfToMarkdown(accuracyNL, ['accuracyRadius', 'Count'])
 
     # Provinces
     provinceVCounts = domainsNL['PROV_NAAM'].value_counts().to_frame()

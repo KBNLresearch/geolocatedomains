@@ -20,11 +20,19 @@ Total run time:
 - Completed Thu 3 Sep, 18:39
 - So total run time approximately 54 hours.
 
-### Spatial join with province layer 
+### QGIS 
 
 Import resulting files in [QGIS](https://www.qgis.org/).
 
-For each location, establish corresponding province using [Dutch Province polygons layer](https://www.nationaalgeoregister.nl/geonetwork/srv/dut/catalog.search#/metadata/e73b01f6-28c7-4bb7-a782-e877e8113e2c). According to description, provinces file is suitable for map scales range 1:750,000 - 1:1,000,000, which implies spatial accuracy of about 1 km. In QGIS: *Data Management Tools*, *Join Attributes by Location ...* and then export resulting layer as CSV. Repeat for each of the 6 files.
+For each location, establish corresponding province using [Dutch Province polygons layer](https://www.nationaalgeoregister.nl/geonetwork/srv/dut/catalog.search#/metadata/e73b01f6-28c7-4bb7-a782-e877e8113e2c) (shapefile). According to description, provinces file is suitable for map scales range 1:750,000 - 1:1,000,000, which implies spatial accuracy of about 1 km.
+
+(To classify provinces: right-click layer, *Properties*, *Symbology*, then at top change *Single symbol* to *Categorized*; in *Value* dropdown menu select *PROV_CODE*; click *Classify*).
+
+
+
+### Spatial join with province layer
+
+In QGIS: *Data Management Tools*, *Join Attributes by Location ...* and then export resulting layer as CSV. Repeat for each of the 6 files.
 
 ### Combine CSVs
 
